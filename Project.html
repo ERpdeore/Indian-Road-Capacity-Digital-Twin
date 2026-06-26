@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Road Condition Assessment Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+   
+    .gradient-bg {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+   
+    .card-glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+   
+    .input-field {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.3s ease;
+    }
+   
+    .input-field:focus {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: #e94560;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.2);
+    }
+   
+    .btn-primary {
+      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+      transition: all 0.3s ease;
+    }
+   
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(233, 69, 96, 0.4);
+    }
+   
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+   
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+   
+    .score-ring {
+      animation: pulse-ring 2s ease-out infinite;
+    }
+   
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0.4); }
+      70% { box-shadow: 0 0 0 15px rgba(233, 69, 96, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(233, 69, 96, 0); }
+    }
+   
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+   
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+   
+    .section-number {
+      background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+   
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+   
+    .chart-container {
+      position: relative;
+      height: 280px;
+      width: 100%;
+    }
+   
+    .recommendation-card {
+      background: linear-gradient(135deg, rgba(233, 69, 96, 0.1) 0%, rgba(255, 107, 107, 0.05) 100%);
+      border-left: 4px solid #e94560;
+    }
+   
+    .improvement-bar {
+      background: linear-gradient(90deg, #e94560 0%, #4ade80 100%);
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full gradient-bg text-white overflow-auto">
+  <div id="app" class="w-full min-h-full"><!-- Input Form Section -->
+   <div id="inputSection" class="w-full px-4 py-8 md:px-8 lg:px-16">
+    <div class="max-w-4xl mx-auto"><!-- Header -->
+     <div class="text-center mb-10 fade-in">
+      <div class="inline-flex items-center gap-3 mb-4">
+       <svg class="w-12 h-12 text-red-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+       </svg>
+       <h1 id="appTitle" class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Road Condition Assessment Tool</h1>
+      </div>
+      <p class="text-gray-400 max-w-2xl mx-auto">Transportation Engineering Project Assessment System - Enter road parameters to receive AI-powered analysis and recommendations</p>
+     </div>
+     <form id="assessmentForm" class="space-y-6"><!-- Section 1: Potholes -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">01</span>
+        <h2 class="text-xl font-semibold">Potholes &amp; Patchwork</h2>
+       </div>
+       <div class="grid md:grid-cols-2 gap-4 mb-4">
+        <div><label for="potholeCount" class="block text-sm text-gray-300 mb-2">Number of Potholes (per 10m stretch)</label> <input type="number" id="potholeCount" min="0" max="50" value="0" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+        <div><label class="block text-sm text-gray-300 mb-2">Patchwork Present?</label> <select id="patchworkPresent" class="input-field w-full px-4 py-3 rounded-xl text-white"> <option value="no">No Patchwork</option> <option value="minor">Minor Patchwork (1-3 patches)</option> <option value="moderate">Moderate Patchwork (4-6 patches)</option> <option value="extensive">Extensive Patchwork (7+ patches)</option> </select>
+        </div>
+       </div>
+       <div id="potholeDetails" class="space-y-3">
+        <p class="text-sm text-gray-400">Add details for each pothole:</p>
+        <div id="potholeContainer"></div><button type="button" onclick="addPothole()" class="btn-secondary px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+         </svg> Add Pothole </button>
+       </div>
+      </div><!-- Section 2: Water Ingress -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">02</span>
+        <h2 class="text-xl font-semibold">Water Ingress</h2>
+       </div>
+       <div class="grid md:grid-cols-2 gap-4">
+        <div><label for="waterIngress1km" class="block text-sm text-gray-300 mb-2">Water Ingress for 1km stretch (m³)</label> <input type="number" id="waterIngress1km" min="0" step="0.1" value="0" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+        <div><label for="waterIngress10m" class="block text-sm text-gray-300 mb-2">Water Ingress for 10m patch (m³)</label> <input type="number" id="waterIngress10m" min="0" step="0.01" value="0" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+       </div>
+      </div><!-- Section 3: Lane Width -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">03</span>
+        <h2 class="text-xl font-semibold">Lane Dimensions</h2>
+       </div>
+       <div class="grid md:grid-cols-2 gap-4">
+        <div><label for="laneWidth" class="block text-sm text-gray-300 mb-2">Lane Width (meters)</label> <input type="number" id="laneWidth" min="1" max="20" step="0.1" value="3.5" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+        <div><label for="numberOfLanes" class="block text-sm text-gray-300 mb-2">Number of Lanes</label> <input type="number" id="numberOfLanes" min="1" max="8" value="2" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+       </div>
+      </div><!-- Section 4: Shoulder Condition -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">04</span>
+        <h2 class="text-xl font-semibold">Shoulder Condition</h2>
+       </div>
+       <div class="grid md:grid-cols-2 gap-4">
+        <div><label class="block text-sm text-gray-300 mb-2">Are Shoulders Provided?</label> <select id="shouldersProvided" onchange="toggleShoulderCondition()" class="input-field w-full px-4 py-3 rounded-xl text-white"> <option value="yes">Yes - Shoulders are provided</option> <option value="no">No - No shoulders</option> </select>
+        </div>
+        <div id="shoulderConditionDiv"><label class="block text-sm text-gray-300 mb-2">Shoulder Damage Level</label> <select id="shoulderCondition" class="input-field w-full px-4 py-3 rounded-xl text-white"> <option value="0">Perfect Condition (0% damaged)</option> <option value="25">Slight Damage (25% damaged)</option> <option value="50">Moderate Damage (50% damaged)</option> <option value="75">Severe Damage (75% damaged)</option> <option value="100">Complete Damage (100% damaged)</option> </select>
+        </div>
+       </div>
+      </div><!-- Section 5: Road Alignment -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">05</span>
+        <h2 class="text-xl font-semibold">Road Alignment</h2>
+       </div>
+       <div class="grid md:grid-cols-3 gap-4">
+        <div><label class="block text-sm text-gray-300 mb-2">Alignment Type</label> <select id="alignmentType" onchange="toggleAlignmentDetails()" class="input-field w-full px-4 py-3 rounded-xl text-white"> <option value="straight">Straight</option> <option value="curved">Curved</option> <option value="mixed">Mixed (Both)</option> </select>
+        </div>
+        <div><label for="straightLength" class="block text-sm text-gray-300 mb-2">Straight Section Length (m)</label> <input type="number" id="straightLength" min="0" value="500" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+        <div id="curvedLengthDiv"><label for="curvedLength" class="block text-sm text-gray-300 mb-2">Curved Section Length (m)</label> <input type="number" id="curvedLength" min="0" value="0" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+       </div>
+      </div><!-- Section 6: Road Surface -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">06</span>
+        <h2 class="text-xl font-semibold">Road Surface Type</h2>
+       </div>
+       <div class="grid md:grid-cols-2 gap-4">
+        <div><label class="block text-sm text-gray-300 mb-2">Surface Type</label> <select id="surfaceType" onchange="toggleCustomSurface()" class="input-field w-full px-4 py-3 rounded-xl text-white"> <option value="flexible">Flexible Pavement (Bituminous)</option> <option value="rigid">Rigid Pavement (Concrete)</option> <option value="kaccha">Kaccha Rasta (Unpaved)</option> <option value="gravel">Gravel Road</option> <option value="other">Other (Specify)</option> </select>
+        </div>
+        <div id="customSurfaceDiv" class="hidden"><label for="customSurface" class="block text-sm text-gray-300 mb-2">Specify Surface Type</label> <input type="text" id="customSurface" placeholder="Enter custom surface type" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+       </div>
+      </div><!-- Section 7: Roadside Environment -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">07</span>
+        <h2 class="text-xl font-semibold">Roadside Environment</h2>
+       </div>
+       <div><label for="roadsideEnv" class="block text-sm text-gray-300 mb-2">Describe the roadside environment (vegetation, buildings, terrain, etc.)</label> <textarea id="roadsideEnv" rows="3" placeholder="e.g., Dense vegetation on both sides, residential area on left, open fields on right, hilly terrain..." class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500 resize-none"></textarea>
+       </div>
+      </div><!-- Section 8: Intersections -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <div class="flex items-center gap-3 mb-5"><span class="section-number text-2xl font-bold">08</span>
+        <h2 class="text-xl font-semibold">Intersections</h2>
+       </div>
+       <div class="grid md:grid-cols-2 gap-4">
+        <div><label class="block text-sm text-gray-300 mb-2">Are there Intersections?</label> <select id="hasIntersection" onchange="toggleIntersectionDetails()" class="input-field w-full px-4 py-3 rounded-xl text-white"> <option value="no">No Intersections</option> <option value="yes">Yes - Has Intersections</option> </select>
+        </div>
+        <div id="intersectionDetailsDiv" class="hidden"><label for="intersectionCount" class="block text-sm text-gray-300 mb-2">Number of Intersections</label> <input type="number" id="intersectionCount" min="1" value="1" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-gray-500">
+        </div>
+       </div>
+       <div id="intersectionTypeDiv" class="hidden mt-4"><label class="block text-sm text-gray-300 mb-2">Intersection Type(s)</label> <select id="intersectionType" class="input-field w-full px-4 py-3 rounded-xl text-white"> <option value="signalized">Signalized Intersection</option> <option value="unsignalized">Unsignalized Intersection</option> <option value="roundabout">Roundabout</option> <option value="tJunction">T-Junction</option> <option value="yJunction">Y-Junction</option> <option value="fourWay">Four-way Intersection</option> </select>
+       </div>
+      </div><!-- Submit Button -->
+      <div class="text-center pt-4"><button type="submit" id="submitBtn" class="btn-primary px-12 py-4 rounded-2xl text-lg font-semibold inline-flex items-center gap-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg><span id="submitBtnText">Analyze Road Condition</span> </button>
+      </div>
+     </form>
+    </div>
+   </div><!-- Results Section (Hidden Initially) -->
+   <div id="resultsSection" class="hidden w-full px-4 py-8 md:px-8 lg:px-16">
+    <div class="max-w-6xl mx-auto"><!-- Results Header -->
+     <div class="text-center mb-10 fade-in">
+      <h2 class="text-3xl font-bold mb-2">Road Assessment Results</h2>
+      <p class="text-gray-400">AI-Powered Analysis &amp; Recommendations</p>
+     </div><!-- Overall Score -->
+     <div class="card-glass rounded-3xl p-8 mb-8 text-center fade-in">
+      <h3 class="text-xl font-semibold mb-6 text-gray-300">Overall Road Condition Score</h3>
+      <div class="inline-flex items-center justify-center">
+       <div id="overallScoreRing" class="score-ring w-40 h-40 rounded-full flex items-center justify-center border-4">
+        <div class="text-center"><span id="overallScore" class="text-5xl font-bold">0</span> <span class="text-2xl text-gray-400">/100</span>
+        </div>
+       </div>
+      </div>
+      <p id="overallGrade" class="mt-4 text-xl font-semibold"></p>
+      <p id="overallDescription" class="mt-2 text-gray-400 max-w-xl mx-auto"></p>
+     </div><!-- Component Scores Grid -->
+     <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        🕳️
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Potholes &amp; Patchwork</h4>
+       <p id="potholeScore" class="text-2xl font-bold text-red-400">0/100</p>
+      </div>
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        💧
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Water Ingress</h4>
+       <p id="waterScore" class="text-2xl font-bold text-blue-400">0/100</p>
+      </div>
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        📏
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Lane Width</h4>
+       <p id="laneScore" class="text-2xl font-bold text-green-400">0/100</p>
+      </div>
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        🛤️
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Shoulder Condition</h4>
+       <p id="shoulderScore" class="text-2xl font-bold text-yellow-400">0/100</p>
+      </div>
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        ↔️
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Road Alignment</h4>
+       <p id="alignmentScore" class="text-2xl font-bold text-purple-400">0/100</p>
+      </div>
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        🛣️
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Road Surface</h4>
+       <p id="surfaceScore" class="text-2xl font-bold text-orange-400">0/100</p>
+      </div>
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        🌳
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Roadside Environment</h4>
+       <p id="envScore" class="text-2xl font-bold text-emerald-400">0/100</p>
+      </div>
+      <div class="card-glass rounded-2xl p-5 text-center fade-in">
+       <div class="text-3xl mb-2">
+        🚦
+       </div>
+       <h4 class="text-sm text-gray-400 mb-1">Intersections</h4>
+       <p id="intersectionScore" class="text-2xl font-bold text-cyan-400">0/100</p>
+      </div>
+     </div><!-- Charts Section -->
+     <div class="grid lg:grid-cols-2 gap-6 mb-8"><!-- Pie Chart -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <h3 class="text-lg font-semibold mb-4 text-center">Score Distribution</h3>
+       <div class="chart-container">
+        <canvas id="pieChart"></canvas>
+       </div>
+      </div><!-- Bar Chart -->
+      <div class="card-glass rounded-2xl p-6 fade-in">
+       <h3 class="text-lg font-semibold mb-4 text-center">Component Analysis</h3>
+       <div class="chart-container">
+        <canvas id="barChart"></canvas>
+       </div>
+      </div>
+     </div><!-- Recommendations Section -->
+     <div class="card-glass rounded-2xl p-6 mb-8 fade-in">
+      <h3 class="text-xl font-semibold mb-6 flex items-center gap-3">
+       <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+       </svg> AI Recommendations</h3>
+      <div id="recommendationsList" class="space-y-4"></div>
+     </div><!-- Bearing Capacity Analysis -->
+     <div class="card-glass rounded-2xl p-6 mb-8 fade-in">
+      <h3 class="text-xl font-semibold mb-6 flex items-center gap-3">
+       <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+       </svg> Bearing Capacity Analysis</h3>
+      <div class="grid md:grid-cols-2 gap-6 mb-6"><!-- Current Bearing Capacity -->
+       <div class="bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-xl p-6 border border-red-500/20">
+        <div class="flex items-center gap-3 mb-4">
+         <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+         </div>
+         <div>
+          <h4 class="font-semibold text-lg">Current Condition</h4>
+          <p class="text-sm text-gray-400">Structural Load Capacity</p>
+         </div>
+        </div>
+        <div class="space-y-4">
+         <div>
+          <div class="flex justify-between mb-2"><span class="text-sm text-gray-400">Effective CBR Value</span> <span id="currentCBR" class="text-red-400 font-bold">0%</span>
+          </div>
+          <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+           <div id="currentCBRBar" class="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
+          </div>
+         </div>
+         <div>
+          <div class="flex justify-between mb-2"><span class="text-sm text-gray-400">Pavement Strength Index</span> <span id="currentPSI" class="text-red-400 font-bold">0</span>
+          </div>
+          <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+           <div id="currentPSIBar" class="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
+          </div>
+         </div>
+         <div class="mt-4 p-3 bg-black/20 rounded-lg">
+          <p class="text-xs text-gray-400 mb-1">Max Safe Load Capacity</p>
+          <p id="currentLoadCapacity" class="text-xl font-bold text-red-400">0 kN</p>
+          <p class="text-xs text-gray-500 mt-1">Per axle (Standard truck)</p>
+         </div>
+         <div class="mt-3 p-3 bg-black/20 rounded-lg">
+          <p class="text-xs text-gray-400 mb-1">Recommended Vehicle Class</p>
+          <p id="currentVehicleClass" class="text-sm font-semibold text-orange-400">Class III</p>
+         </div>
+        </div>
+       </div><!-- Projected Bearing Capacity -->
+       <div class="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20">
+        <div class="flex items-center gap-3 mb-4">
+         <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
+          <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+         </div>
+         <div>
+          <h4 class="font-semibold text-lg">After Improvements</h4>
+          <p class="text-sm text-gray-400">Enhanced Load Capacity</p>
+         </div>
+        </div>
+        <div class="space-y-4">
+         <div>
+          <div class="flex justify-between mb-2"><span class="text-sm text-gray-400">Effective CBR Value</span> <span id="projectedCBR" class="text-green-400 font-bold">0%</span>
+          </div>
+          <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+           <div id="projectedCBRBar" class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
+          </div>
+         </div>
+         <div>
+          <div class="flex justify-between mb-2"><span class="text-sm text-gray-400">Pavement Strength Index</span> <span id="projectedPSI" class="text-green-400 font-bold">0</span>
+          </div>
+          <div class="h-2 bg-gray-700 rounded-full overflow-hidden">
+           <div id="projectedPSIBar" class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
+          </div>
+         </div>
+         <div class="mt-4 p-3 bg-black/20 rounded-lg">
+          <p class="text-xs text-gray-400 mb-1">Max Safe Load Capacity</p>
+          <p id="projectedLoadCapacity" class="text-xl font-bold text-green-400">0 kN</p>
+          <p class="text-xs text-gray-500 mt-1">Per axle (Standard truck)</p>
+         </div>
+         <div class="mt-3 p-3 bg-black/20 rounded-lg">
+          <p class="text-xs text-gray-400 mb-1">Recommended Vehicle Class</p>
+          <p id="projectedVehicleClass" class="text-sm font-semibold text-green-400">Class V</p>
+         </div>
+        </div>
+       </div>
+      </div><!-- Bearing Capacity Improvement Details -->
+      <div class="grid md:grid-cols-3 gap-4">
+       <div class="bg-white/5 rounded-xl p-4 text-center">
+        <p class="text-gray-400 text-sm mb-2">CBR Improvement</p>
+        <p id="cbrImprovement" class="text-2xl font-bold text-cyan-400">+0%</p>
+        <div class="mt-2 flex items-center justify-center gap-1 text-xs text-gray-500">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+         </svg><span>Subgrade strength increase</span>
+        </div>
+       </div>
+       <div class="bg-white/5 rounded-xl p-4 text-center">
+        <p class="text-gray-400 text-sm mb-2">Load Capacity Gain</p>
+        <p id="loadCapacityGain" class="text-2xl font-bold text-purple-400">+0 kN</p>
+        <div class="mt-2 flex items-center justify-center gap-1 text-xs text-gray-500">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
+         </svg><span>Heavier vehicle support</span>
+        </div>
+       </div>
+       <div class="bg-white/5 rounded-xl p-4 text-center">
+        <p class="text-gray-400 text-sm mb-2">Service Life Extension</p>
+        <p id="serviceLifeExtension" class="text-2xl font-bold text-yellow-400">+0 years</p>
+        <div class="mt-2 flex items-center justify-center gap-1 text-xs text-gray-500">
+         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+         </svg><span>Extended pavement life</span>
+        </div>
+       </div>
+      </div><!-- Technical Explanation -->
+      <div class="mt-6 p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
+       <div class="flex gap-3">
+        <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+         <p class="text-blue-300 font-semibold mb-2">Understanding Bearing Capacity</p>
+         <p id="bearingCapacityExplanation" class="text-sm text-gray-400 leading-relaxed"></p>
+        </div>
+       </div>
+      </div>
+     </div><!-- Improvement Projection -->
+     <div class="card-glass rounded-2xl p-6 mb-8 fade-in">
+      <h3 class="text-xl font-semibold mb-6 flex items-center gap-3">
+       <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+       </svg> Projected Improvement After Recommendations</h3>
+      <div class="grid md:grid-cols-2 gap-6">
+       <div>
+        <div class="chart-container">
+         <canvas id="improvementChart"></canvas>
+        </div>
+       </div>
+       <div class="space-y-4">
+        <div>
+         <div class="flex justify-between text-sm mb-1"><span class="text-gray-400">Current Score</span> <span id="currentScoreText" class="text-red-400 font-semibold">0%</span>
+         </div>
+         <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+          <div id="currentBar" class="h-full bg-red-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+         </div>
+        </div>
+        <div>
+         <div class="flex justify-between text-sm mb-1"><span class="text-gray-400">After Phase 1 (Immediate Repairs)</span> <span id="phase1ScoreText" class="text-yellow-400 font-semibold">0%</span>
+         </div>
+         <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+          <div id="phase1Bar" class="h-full bg-yellow-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+         </div>
+        </div>
+        <div>
+         <div class="flex justify-between text-sm mb-1"><span class="text-gray-400">After Phase 2 (Structural Improvements)</span> <span id="phase2ScoreText" class="text-blue-400 font-semibold">0%</span>
+         </div>
+         <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+          <div id="phase2Bar" class="h-full bg-blue-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+         </div>
+        </div>
+        <div>
+         <div class="flex justify-between text-sm mb-1"><span class="text-gray-400">After All Recommendations</span> <span id="finalScoreText" class="text-green-400 font-semibold">0%</span>
+         </div>
+         <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+          <div id="finalBar" class="h-full bg-green-400 rounded-full transition-all duration-1000" style="width: 0%"></div>
+         </div>
+        </div>
+        <div class="mt-6 p-4 bg-green-500/10 rounded-xl border border-green-500/20">
+         <p class="text-green-400 font-semibold text-lg">Expected Improvement: <span id="improvementPercent">0%</span></p>
+         <p class="text-gray-400 text-sm mt-1">Following all recommendations will significantly improve road safety and usability</p>
+        </div>
+       </div>
+      </div>
+     </div><!-- Back Button -->
+     <div class="text-center"><button onclick="showInputForm()" class="btn-secondary px-8 py-3 rounded-xl font-semibold inline-flex items-center gap-2">
+       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+       </svg> New Assessment </button>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    // Default configuration
+    const defaultConfig = {
+      app_title: 'Road Condition Assessment Tool',
+      submit_button_text: 'Analyze Road Condition',
+      background_color: '#1a1a2e',
+      accent_color: '#e94560',
+      text_color: '#ffffff',
+      card_color: 'rgba(255, 255, 255, 0.05)',
+      secondary_text_color: '#9ca3af'
+    };
+
+    let config = { ...defaultConfig };
+    let potholeCount = 0;
+    let pieChart = null;
+    let barChart = null;
+    let improvementChart = null;
+
+    // Initialize SDK
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (newConfig) => {
+          config = { ...defaultConfig, ...newConfig };
+          applyConfig();
+        },
+        mapToCapabilities: (cfg) => ({
+          recolorables: [],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (cfg) => new Map([
+          ['app_title', cfg.app_title || defaultConfig.app_title],
+          ['submit_button_text', cfg.submit_button_text || defaultConfig.submit_button_text]
+        ])
+      });
+    }
+
+    function applyConfig() {
+      document.getElementById('appTitle').textContent = config.app_title || defaultConfig.app_title;
+      document.getElementById('submitBtnText').textContent = config.submit_button_text || defaultConfig.submit_button_text;
+    }
+
+    // Pothole management
+    function addPothole() {
+      potholeCount++;
+      const container = document.getElementById('potholeContainer');
+      const div = document.createElement('div');
+      div.className = 'flex flex-wrap gap-3 items-center p-3 bg-white/5 rounded-lg';
+      div.id = `pothole-${potholeCount}`;
+      div.innerHTML = `
+        <span class="text-sm text-gray-400 w-20">Pothole ${potholeCount}</span>
+        <div class="flex-1 min-w-32">
+          <select class="pothole-size input-field w-full px-3 py-2 rounded-lg text-white text-sm">
+            <option value="small">Small (&lt;10cm)</option>
+            <option value="medium">Medium (10-30cm)</option>
+            <option value="large">Large (30-50cm)</option>
+            <option value="xlarge">Very Large (&gt;50cm)</option>
+          </select>
+        </div>
+        <div class="flex-1 min-w-32">
+          <select class="pothole-depth input-field w-full px-3 py-2 rounded-lg text-white text-sm">
+            <option value="shallow">Shallow (&lt;3cm)</option>
+            <option value="medium">Medium (3-7cm)</option>
+            <option value="deep">Deep (7-15cm)</option>
+            <option value="vdeep">Very Deep (&gt;15cm)</option>
+          </select>
+        </div>
+        <button type="button" onclick="removePothole(${potholeCount})" class="text-red-400 hover:text-red-300 p-1">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      `;
+      container.appendChild(div);
+    }
+
+    function removePothole(id) {
+      const elem = document.getElementById(`pothole-${id}`);
+      if (elem) elem.remove();
+    }
+
+    // Toggle functions
+    function toggleShoulderCondition() {
+      const shouldersProvided = document.getElementById('shouldersProvided').value;
+      const conditionDiv = document.getElementById('shoulderConditionDiv');
+      conditionDiv.style.display = shouldersProvided === 'yes' ? 'block' : 'none';
+    }
+
+    function toggleAlignmentDetails() {
+      const alignmentType = document.getElementById('alignmentType').value;
+      const curvedDiv = document.getElementById('curvedLengthDiv');
+      curvedDiv.style.display = alignmentType !== 'straight' ? 'block' : 'none';
+    }
+
+    function toggleCustomSurface() {
+      const surfaceType = document.getElementById('surfaceType').value;
+      const customDiv = document.getElementById('customSurfaceDiv');
+      customDiv.classList.toggle('hidden', surfaceType !== 'other');
+    }
+
+    function toggleIntersectionDetails() {
+      const hasIntersection = document.getElementById('hasIntersection').value;
+      document.getElementById('intersectionDetailsDiv').classList.toggle('hidden', hasIntersection !== 'yes');
+      document.getElementById('intersectionTypeDiv').classList.toggle('hidden', hasIntersection !== 'yes');
+    }
+
+    // Scoring functions
+    function calculatePotholeScore(data) {
+      let score = 100;
+      const potholes = data.potholes;
+     
+      // Deduct for number of potholes
+      score -= potholes.length * 8;
+     
+      // Deduct for size and depth
+      potholes.forEach(p => {
+        const sizeDeduct = { small: 2, medium: 5, large: 10, xlarge: 15 };
+        const depthDeduct = { shallow: 1, medium: 3, deep: 6, vdeep: 10 };
+        score -= (sizeDeduct[p.size] || 0) + (depthDeduct[p.depth] || 0);
+      });
+     
+      // Deduct for patchwork
+      const patchDeduct = { no: 0, minor: 5, moderate: 15, extensive: 25 };
+      score -= patchDeduct[data.patchwork] || 0;
+     
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function calculateWaterScore(data) {
+      let score = 100;
+     
+      // Water ingress per km should be minimal (threshold: 0.5 m³/km is acceptable)
+      if (data.water1km > 0.5) score -= Math.min(50, (data.water1km - 0.5) * 20);
+      if (data.water1km > 2) score -= 20;
+     
+      // Water ingress per 10m (threshold: 0.05 m³/10m)
+      if (data.water10m > 0.05) score -= Math.min(30, (data.water10m - 0.05) * 100);
+     
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function calculateLaneScore(data) {
+      let score = 100;
+      const idealWidth = 3.5; // meters
+      const minWidth = 2.75;
+      const maxWidth = 4.5;
+     
+      if (data.laneWidth < minWidth) {
+        score -= (minWidth - data.laneWidth) * 40;
+      } else if (data.laneWidth < idealWidth) {
+        score -= (idealWidth - data.laneWidth) * 15;
+      } else if (data.laneWidth > maxWidth) {
+        score -= (data.laneWidth - maxWidth) * 5; // Too wide is slightly penalized
+      }
+     
+      // Check number of lanes vs width
+      if (data.lanes === 1 && data.laneWidth < 3) score -= 10;
+     
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function calculateShoulderScore(data) {
+      if (!data.shouldersProvided) return 40; // No shoulders is a significant issue
+     
+      let score = 100;
+      score -= data.shoulderDamage;
+     
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function calculateAlignmentScore(data) {
+      let score = 100;
+      const totalLength = data.straightLength + data.curvedLength;
+     
+      if (totalLength === 0) return 80;
+     
+      const curvedRatio = data.curvedLength / totalLength;
+     
+      // More curves = slightly lower score (but not terrible)
+      score -= curvedRatio * 25;
+     
+      // Mixed alignments can be good for safety (keeps drivers alert)
+      if (data.alignmentType === 'mixed' && curvedRatio > 0.1 && curvedRatio < 0.5) {
+        score += 5;
+      }
+     
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function calculateSurfaceScore(data) {
+      const surfaceScores = {
+        flexible: 85,
+        rigid: 95,
+        kaccha: 30,
+        gravel: 50,
+        other: 60
+      };
+     
+      return surfaceScores[data.surfaceType] || 60;
+    }
+
+    function calculateEnvironmentScore(data) {
+      let score = 75; // Base score
+      const env = data.roadsideEnv.toLowerCase();
+     
+      // Positive factors
+      if (env.includes('clear') || env.includes('open')) score += 10;
+      if (env.includes('maintained') || env.includes('well-kept')) score += 10;
+      if (env.includes('lighting') || env.includes('lit')) score += 5;
+      if (env.includes('barrier') || env.includes('guardrail')) score += 5;
+     
+      // Negative factors
+      if (env.includes('dense') || env.includes('overgrown')) score -= 10;
+      if (env.includes('industrial') || env.includes('commercial')) score -= 5;
+      if (env.includes('school') || env.includes('hospital')) score -= 5; // Higher risk areas
+      if (env.includes('cliff') || env.includes('steep')) score -= 15;
+      if (env.includes('flood') || env.includes('waterlogged')) score -= 20;
+      if (env.includes('debris') || env.includes('garbage')) score -= 10;
+     
+      return Math.max(0, Math.min(100, score));
+    }
+
+    function calculateIntersectionScore(data) {
+      if (!data.hasIntersection) return 95; // No intersections is generally safer
+     
+      let score = 80;
+      const typeScores = {
+        signalized: 90,
+        roundabout: 85,
+        unsignalized: 60,
+        tJunction: 70,
+        yJunction: 65,
+        fourWay: 75
+      };
+     
+      score = typeScores[data.intersectionType] || 70;
+     
+      // Deduct for multiple intersections
+      if (data.intersectionCount > 1) {
+        score -= (data.intersectionCount - 1) * 5;
+      }
+     
+      return Math.max(0, Math.min(100, score));
+    }
+
+    // Bearing Capacity Calculations
+    function calculateBearingCapacity(data, scores) {
+      // Base CBR values by surface type
+      const baseCBR = {
+        flexible: 8,    // Bituminous pavement typically on 8% CBR subgrade
+        rigid: 10,      // Concrete pavement on better subgrade
+        kaccha: 3,      // Unpaved roads on poor subgrade
+        gravel: 5,      // Gravel roads
+        other: 6        // Unknown surfaces
+      };
+     
+      let currentCBR = baseCBR[data.surfaceType] || 6;
+     
+      // Reduce CBR based on defects
+      // Potholes reduce subgrade support
+      const potholeImpact = Math.min(3, data.potholes.length * 0.15);
+      currentCBR -= potholeImpact;
+     
+      // Water ingress significantly reduces CBR
+      const waterImpact = Math.min(2.5, (data.water1km * 0.8 + data.water10m * 5));
+      currentCBR -= waterImpact;
+     
+      // Shoulder condition affects edge support
+      if (!data.shouldersProvided) {
+        currentCBR -= 0.8;
+      } else {
+        currentCBR -= (data.shoulderDamage / 100) * 1.2;
+      }
+     
+      // Patchwork indicates structural distress
+      const patchImpact = { no: 0, minor: 0.3, moderate: 0.7, extensive: 1.2 };
+      currentCBR -= patchImpact[data.patchwork] || 0;
+     
+      currentCBR = Math.max(2, currentCBR);
+     
+      // Calculate Pavement Strength Index (PSI scale 0-5)
+      let currentPSI = 5;
+     
+      // Surface condition impacts PSI
+      currentPSI -= (100 - scores.surface) * 0.03;
+      currentPSI -= (100 - scores.pothole) * 0.025;
+      currentPSI -= (100 - scores.water) * 0.015;
+     
+      currentPSI = Math.max(1, Math.min(5, currentPSI));
+     
+      // Calculate load capacity (kN per axle)
+      // Formula based on pavement design standards
+      const thicknessMultiplier = data.surfaceType === 'rigid' ? 1.4 : (data.surfaceType === 'flexible' ? 1.2 : 0.8);
+      let currentLoadCapacity = currentCBR * 9.8 * thicknessMultiplier;
+      currentLoadCapacity = Math.max(40, Math.min(180, currentLoadCapacity));
+     
+      // Vehicle class recommendation based on load capacity
+      function getVehicleClass(loadCapacity) {
+        if (loadCapacity >= 150) return 'Class VII (Heavy Trucks)';
+        if (loadCapacity >= 120) return 'Class VI (Medium-Heavy Trucks)';
+        if (loadCapacity >= 90) return 'Class V (Light-Heavy Trucks)';
+        if (loadCapacity >= 70) return 'Class IV (Heavy Vehicles)';
+        if (loadCapacity >= 50) return 'Class III (Light Vehicles)';
+        return 'Class II (Light Vehicles Only)';
+      }
+     
+      // Calculate projected values after improvements
+      let projectedCBR = currentCBR;
+     
+      // Improvements from recommendations
+      if (scores.pothole < 70) {
+        projectedCBR += 1.5; // Pothole repair improves subgrade
+      }
+     
+      if (scores.water < 60) {
+        projectedCBR += 2.0; // Drainage improvement significantly helps
+      }
+     
+      if (scores.shoulder < 60) {
+        projectedCBR += 1.2; // Shoulder repair improves edge support
+      }
+     
+      if (scores.surface < 60) {
+        // Surface upgrade provides major improvement
+        if (data.surfaceType === 'kaccha') {
+          projectedCBR += 4.5; // Paving unpaved road
+        } else if (data.surfaceType === 'gravel') {
+          projectedCBR += 3.0; // Upgrading gravel
+        } else {
+          projectedCBR += 2.5; // Resurfacing existing pavement
+        }
+      }
+     
+      projectedCBR = Math.min(15, projectedCBR);
+     
+      // Projected PSI after improvements
+      let projectedPSI = currentPSI;
+      const totalImprovement = (
+        (scores.surface < 60 ? 0.8 : 0) +
+        (scores.pothole < 70 ? 0.6 : 0) +
+        (scores.water < 60 ? 0.5 : 0) +
+        (scores.shoulder < 60 ? 0.3 : 0)
+      );
+      projectedPSI = Math.min(5, projectedPSI + totalImprovement);
+     
+      // Projected load capacity
+      const projectedThickness = (scores.surface < 60 && data.surfaceType !== 'rigid') ? 1.3 : thicknessMultiplier;
+      let projectedLoadCapacity = projectedCBR * 9.8 * projectedThickness;
+      projectedLoadCapacity = Math.max(40, Math.min(180, projectedLoadCapacity));
+     
+      // Service life calculation
+      const baseLife = data.surfaceType === 'rigid' ? 30 : (data.surfaceType === 'flexible' ? 20 : 5);
+      const conditionFactor = (scores.surface / 100) * (scores.water / 100) * (scores.pothole / 100);
+      const currentLife = baseLife * conditionFactor;
+     
+      const projectedLife = baseLife * 0.95; // Near design life after improvements
+      const lifeExtension = Math.max(0, projectedLife - currentLife);
+     
+      return {
+        current: {
+          cbr: currentCBR.toFixed(1),
+          psi: currentPSI.toFixed(2),
+          loadCapacity: Math.round(currentLoadCapacity),
+          vehicleClass: getVehicleClass(currentLoadCapacity)
+        },
+        projected: {
+          cbr: projectedCBR.toFixed(1),
+          psi: projectedPSI.toFixed(2),
+          loadCapacity: Math.round(projectedLoadCapacity),
+          vehicleClass: getVehicleClass(projectedLoadCapacity)
+        },
+        improvements: {
+          cbrGain: (projectedCBR - currentCBR).toFixed(1),
+          loadCapacityGain: Math.round(projectedLoadCapacity - currentLoadCapacity),
+          serviceLifeExtension: Math.round(lifeExtension)
+        }
+      };
+    }
+   
+    function getBearingCapacityExplanation(data, bearingData) {
+      const currentCBR = parseFloat(bearingData.current.cbr);
+      const projectedCBR = parseFloat(bearingData.projected.cbr);
+     
+      let explanation = '';
+     
+      if (currentCBR < 5) {
+        explanation = `The current bearing capacity is critically low (CBR: ${currentCBR}%). This indicates a weak subgrade that cannot adequately support vehicle loads. `;
+      } else if (currentCBR < 8) {
+        explanation = `The current bearing capacity is below standard (CBR: ${currentCBR}%). The pavement foundation has reduced load-bearing capacity. `;
+      } else {
+        explanation = `The current bearing capacity is adequate (CBR: ${currentCBR}%). The pavement has reasonable structural strength. `;
+      }
+     
+      if (data.water1km > 0.5 || data.water10m > 0.05) {
+        explanation += 'Water infiltration is the primary factor weakening the subgrade, reducing its ability to distribute loads effectively. ';
+      }
+     
+      if (data.potholes.length > 3) {
+        explanation += 'Multiple potholes indicate structural failure zones where the pavement can no longer transfer loads properly. ';
+      }
+     
+      explanation += `After implementing all recommendations, the CBR will improve to ${projectedCBR}%, increasing the safe load capacity by ${bearingData.improvements.loadCapacityGain} kN per axle. This enhancement will allow the road to safely accommodate ${bearingData.projected.vehicleClass.toLowerCase()} while extending its service life by approximately ${bearingData.improvements.serviceLifeExtension} years.`;
+     
+      return explanation;
+    }
+
+    function generateRecommendations(scores, data) {
+      const recommendations = [];
+     
+      if (scores.pothole < 70) {
+        recommendations.push({
+          priority: 'High',
+          title: 'Pothole Repair Required',
+          description: 'Immediate patching and repair of existing potholes is essential. Consider full surface rehabilitation if damage is extensive.',
+          impact: 'Safety Critical',
+          improvement: Math.min(25, 100 - scores.pothole)
+        });
+      }
+     
+      if (scores.water < 60) {
+        recommendations.push({
+          priority: 'High',
+          title: 'Drainage System Improvement',
+          description: 'Install or repair drainage channels, cross drains, and side drains. Consider permeable shoulders to reduce water accumulation.',
+          impact: 'Structural Integrity',
+          improvement: Math.min(20, 100 - scores.water)
+        });
+      }
+     
+      if (scores.lane < 70) {
+        recommendations.push({
+          priority: 'Medium',
+          title: 'Lane Width Adjustment',
+          description: data.laneWidth < 3.5
+            ? 'Consider widening lanes to meet standard requirements (3.5m minimum for arterial roads).'
+            : 'Optimize lane markings and ensure consistent width throughout.',
+          impact: 'Traffic Flow',
+          improvement: Math.min(15, 100 - scores.lane)
+        });
+      }
+     
+      if (scores.shoulder < 60) {
+        recommendations.push({
+          priority: 'High',
+          title: 'Shoulder Rehabilitation',
+          description: !data.shouldersProvided
+            ? 'Construct paved shoulders (minimum 1.5m width) for vehicle recovery and pedestrian safety.'
+            : 'Repair damaged shoulder sections and ensure proper compaction and surfacing.',
+          impact: 'Safety & Emergency',
+          improvement: Math.min(25, 100 - scores.shoulder)
+        });
+      }
+     
+      if (scores.alignment < 70) {
+        recommendations.push({
+          priority: 'Medium',
+          title: 'Alignment Safety Measures',
+          description: 'Install warning signs, delineators, and rumble strips on curved sections. Consider superelevation review for horizontal curves.',
+          impact: 'Accident Prevention',
+          improvement: Math.min(15, 100 - scores.alignment)
+        });
+      }
+     
+      if (scores.surface < 60) {
+        recommendations.push({
+          priority: 'High',
+          title: 'Surface Upgrade',
+          description: data.surfaceType === 'kaccha'
+            ? 'Upgrade to bituminous surface with proper sub-base preparation.'
+            : 'Consider resurfacing or overlay to improve ride quality and durability.',
+          impact: 'Ride Quality',
+          improvement: Math.min(30, 100 - scores.surface)
+        });
+      }
+     
+      if (scores.environment < 60) {
+        recommendations.push({
+          priority: 'Low',
+          title: 'Roadside Environment Management',
+          description: 'Clear vegetation within clear zone, install safety barriers where needed, and improve lighting in dark sections.',
+          impact: 'Visibility & Safety',
+          improvement: Math.min(15, 100 - scores.environment)
+        });
+      }
+     
+      if (scores.intersection < 70 && data.hasIntersection) {
+        recommendations.push({
+          priority: 'Medium',
+          title: 'Intersection Safety Enhancement',
+          description: data.intersectionType === 'unsignalized'
+            ? 'Consider installing traffic signals or converting to roundabout for better traffic management.'
+            : 'Review signal timing, improve visibility, and add proper lane markings.',
+          impact: 'Conflict Reduction',
+          improvement: Math.min(20, 100 - scores.intersection)
+        });
+      }
+     
+      return recommendations.sort((a, b) => {
+        const priorityOrder = { High: 0, Medium: 1, Low: 2 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      });
+    }
+
+    function getOverallGrade(score) {
+      if (score >= 90) return { grade: 'Excellent (A)', color: '#22c55e', description: 'Road is in excellent condition with minimal improvements needed.' };
+      if (score >= 80) return { grade: 'Good (B)', color: '#84cc16', description: 'Road is in good condition with minor improvements recommended.' };
+      if (score >= 70) return { grade: 'Satisfactory (C)', color: '#eab308', description: 'Road is serviceable but requires attention in several areas.' };
+      if (score >= 60) return { grade: 'Fair (D)', color: '#f97316', description: 'Road has significant issues requiring priority intervention.' };
+      if (score >= 50) return { grade: 'Poor (E)', color: '#ef4444', description: 'Road is in poor condition with multiple critical deficiencies.' };
+      return { grade: 'Very Poor (F)', color: '#dc2626', description: 'Road requires major rehabilitation or reconstruction.' };
+    }
+
+    function displayResults(scores, recommendations, data, bearingData) {
+      const overall = Math.round(
+        (scores.pothole * 0.2) +
+        (scores.water * 0.15) +
+        (scores.lane * 0.1) +
+        (scores.shoulder * 0.15) +
+        (scores.alignment * 0.1) +
+        (scores.surface * 0.15) +
+        (scores.environment * 0.05) +
+        (scores.intersection * 0.1)
+      );
+     
+      const gradeInfo = getOverallGrade(overall);
+     
+      // Update scores
+      document.getElementById('overallScore').textContent = overall;
+      document.getElementById('overallGrade').textContent = gradeInfo.grade;
+      document.getElementById('overallGrade').style.color = gradeInfo.color;
+      document.getElementById('overallDescription').textContent = gradeInfo.description;
+      document.getElementById('overallScoreRing').style.borderColor = gradeInfo.color;
+     
+      // Update bearing capacity data
+      document.getElementById('currentCBR').textContent = `${bearingData.current.cbr}%`;
+      document.getElementById('currentPSI').textContent = bearingData.current.psi;
+      document.getElementById('currentLoadCapacity').textContent = `${bearingData.current.loadCapacity} kN`;
+      document.getElementById('currentVehicleClass').textContent = bearingData.current.vehicleClass;
+     
+      document.getElementById('projectedCBR').textContent = `${bearingData.projected.cbr}%`;
+      document.getElementById('projectedPSI').textContent = bearingData.projected.psi;
+      document.getElementById('projectedLoadCapacity').textContent = `${bearingData.projected.loadCapacity} kN`;
+      document.getElementById('projectedVehicleClass').textContent = bearingData.projected.vehicleClass;
+     
+      document.getElementById('cbrImprovement').textContent = `+${bearingData.improvements.cbrGain}%`;
+      document.getElementById('loadCapacityGain').textContent = `+${bearingData.improvements.loadCapacityGain} kN`;
+      document.getElementById('serviceLifeExtension').textContent = `+${bearingData.improvements.serviceLifeExtension} years`;
+     
+      document.getElementById('bearingCapacityExplanation').textContent = getBearingCapacityExplanation(data, bearingData);
+     
+      // Animate bars
+      setTimeout(() => {
+        const currentCBRPercent = (parseFloat(bearingData.current.cbr) / 15) * 100;
+        const projectedCBRPercent = (parseFloat(bearingData.projected.cbr) / 15) * 100;
+        const currentPSIPercent = (parseFloat(bearingData.current.psi) / 5) * 100;
+        const projectedPSIPercent = (parseFloat(bearingData.projected.psi) / 5) * 100;
+       
+        document.getElementById('currentCBRBar').style.width = `${currentCBRPercent}%`;
+        document.getElementById('projectedCBRBar').style.width = `${projectedCBRPercent}%`;
+        document.getElementById('currentPSIBar').style.width = `${currentPSIPercent}%`;
+        document.getElementById('projectedPSIBar').style.width = `${projectedPSIPercent}%`;
+      }, 300);
+     
+      document.getElementById('potholeScore').textContent = `${scores.pothole}/100`;
+      document.getElementById('waterScore').textContent = `${scores.water}/100`;
+      document.getElementById('laneScore').textContent = `${scores.lane}/100`;
+      document.getElementById('shoulderScore').textContent = `${scores.shoulder}/100`;
+      document.getElementById('alignmentScore').textContent = `${scores.alignment}/100`;
+      document.getElementById('surfaceScore').textContent = `${scores.surface}/100`;
+      document.getElementById('envScore').textContent = `${scores.environment}/100`;
+      document.getElementById('intersectionScore').textContent = `${scores.intersection}/100`;
+     
+      // Create charts
+      createPieChart(scores);
+      createBarChart(scores);
+     
+      // Display recommendations
+      const recList = document.getElementById('recommendationsList');
+      recList.innerHTML = recommendations.map((rec, i) => `
+        <div class="recommendation-card rounded-xl p-4 fade-in" style="animation-delay: ${i * 0.1}s">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="px-2 py-1 rounded text-xs font-semibold ${
+                  rec.priority === 'High' ? 'bg-red-500/20 text-red-400' :
+                  rec.priority === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                  'bg-green-500/20 text-green-400'
+                }">${rec.priority} Priority</span>
+                <span class="text-gray-500 text-sm">${rec.impact}</span>
+              </div>
+              <h4 class="font-semibold text-lg mb-1">${rec.title}</h4>
+              <p class="text-gray-400 text-sm">${rec.description}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-green-400 font-bold text-lg">+${rec.improvement}%</p>
+              <p class="text-gray-500 text-xs">Potential Gain</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+     
+      // Calculate improvement projections
+      const totalImprovement = recommendations.reduce((sum, r) => sum + r.improvement, 0);
+      const phase1Improvement = recommendations.filter(r => r.priority === 'High').reduce((sum, r) => sum + r.improvement, 0);
+      const phase2Improvement = recommendations.filter(r => r.priority === 'Medium').reduce((sum, r) => sum + r.improvement, 0);
+     
+      const phase1Score = Math.min(100, overall + phase1Improvement);
+      const phase2Score = Math.min(100, phase1Score + phase2Improvement);
+      const finalScore = Math.min(100, overall + totalImprovement);
+     
+      // Update improvement bars with animation
+      setTimeout(() => {
+        document.getElementById('currentBar').style.width = `${overall}%`;
+        document.getElementById('currentScoreText').textContent = `${overall}%`;
+       
+        document.getElementById('phase1Bar').style.width = `${phase1Score}%`;
+        document.getElementById('phase1ScoreText').textContent = `${phase1Score}%`;
+       
+        document.getElementById('phase2Bar').style.width = `${phase2Score}%`;
+        document.getElementById('phase2ScoreText').textContent = `${phase2Score}%`;
+       
+        document.getElementById('finalBar').style.width = `${finalScore}%`;
+        document.getElementById('finalScoreText').textContent = `${finalScore}%`;
+       
+        document.getElementById('improvementPercent').textContent = `+${finalScore - overall}%`;
+      }, 300);
+     
+      // Create improvement chart
+      createImprovementChart(overall, phase1Score, phase2Score, finalScore);
+     
+      // Show results
+      document.getElementById('inputSection').classList.add('hidden');
+      document.getElementById('resultsSection').classList.remove('hidden');
+      document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function createPieChart(scores) {
+      const ctx = document.getElementById('pieChart').getContext('2d');
+     
+      if (pieChart) pieChart.destroy();
+     
+      pieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Potholes', 'Water', 'Lane', 'Shoulder', 'Alignment', 'Surface', 'Environment', 'Intersection'],
+          datasets: [{
+            data: [scores.pothole, scores.water, scores.lane, scores.shoulder, scores.alignment, scores.surface, scores.environment, scores.intersection],
+            backgroundColor: [
+              '#f87171', '#60a5fa', '#4ade80', '#facc15', '#a78bfa', '#fb923c', '#34d399', '#22d3ee'
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                color: '#9ca3af',
+                padding: 10,
+                font: { size: 11 }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createBarChart(scores) {
+      const ctx = document.getElementById('barChart').getContext('2d');
+     
+      if (barChart) barChart.destroy();
+     
+      barChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Potholes', 'Water', 'Lane', 'Shoulder', 'Alignment', 'Surface', 'Environment', 'Intersection'],
+          datasets: [{
+            label: 'Score',
+            data: [scores.pothole, scores.water, scores.lane, scores.shoulder, scores.alignment, scores.surface, scores.environment, scores.intersection],
+            backgroundColor: [
+              '#f87171', '#60a5fa', '#4ade80', '#facc15', '#a78bfa', '#fb923c', '#34d399', '#22d3ee'
+            ],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: 'rgba(255,255,255,0.1)' },
+              ticks: { color: '#9ca3af' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#9ca3af', font: { size: 10 } }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    function createImprovementChart(current, phase1, phase2, final) {
+      const ctx = document.getElementById('improvementChart').getContext('2d');
+     
+      if (improvementChart) improvementChart.destroy();
+     
+      improvementChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Current', 'Phase 1', 'Phase 2', 'Complete'],
+          datasets: [{
+            label: 'Road Score',
+            data: [current, phase1, phase2, final],
+            borderColor: '#e94560',
+            backgroundColor: 'rgba(233, 69, 96, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: ['#ef4444', '#facc15', '#3b82f6', '#22c55e'],
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: 'rgba(255,255,255,0.1)' },
+              ticks: { color: '#9ca3af' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#9ca3af' }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    function showInputForm() {
+      document.getElementById('resultsSection').classList.add('hidden');
+      document.getElementById('inputSection').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Form submission
+    document.getElementById('assessmentForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+     
+      // Collect pothole data
+      const potholes = [];
+      document.querySelectorAll('#potholeContainer > div').forEach(div => {
+        const size = div.querySelector('.pothole-size')?.value;
+        const depth = div.querySelector('.pothole-depth')?.value;
+        if (size && depth) {
+          potholes.push({ size, depth });
+        }
+      });
+     
+      // Collect all form data
+      const data = {
+        potholes,
+        patchwork: document.getElementById('patchworkPresent').value,
+        water1km: parseFloat(document.getElementById('waterIngress1km').value) || 0,
+        water10m: parseFloat(document.getElementById('waterIngress10m').value) || 0,
+        laneWidth: parseFloat(document.getElementById('laneWidth').value) || 3.5,
+        lanes: parseInt(document.getElementById('numberOfLanes').value) || 2,
+        shouldersProvided: document.getElementById('shouldersProvided').value === 'yes',
+        shoulderDamage: parseInt(document.getElementById('shoulderCondition').value) || 0,
+        alignmentType: document.getElementById('alignmentType').value,
+        straightLength: parseFloat(document.getElementById('straightLength').value) || 0,
+        curvedLength: parseFloat(document.getElementById('curvedLength').value) || 0,
+        surfaceType: document.getElementById('surfaceType').value,
+        customSurface: document.getElementById('customSurface').value,
+        roadsideEnv: document.getElementById('roadsideEnv').value || '',
+        hasIntersection: document.getElementById('hasIntersection').value === 'yes',
+        intersectionCount: parseInt(document.getElementById('intersectionCount').value) || 0,
+        intersectionType: document.getElementById('intersectionType').value
+      };
+     
+      // Calculate scores
+      const scores = {
+        pothole: Math.round(calculatePotholeScore(data)),
+        water: Math.round(calculateWaterScore(data)),
+        lane: Math.round(calculateLaneScore(data)),
+        shoulder: Math.round(calculateShoulderScore(data)),
+        alignment: Math.round(calculateAlignmentScore(data)),
+        surface: Math.round(calculateSurfaceScore(data)),
+        environment: Math.round(calculateEnvironmentScore(data)),
+        intersection: Math.round(calculateIntersectionScore(data))
+      };
+     
+      // Calculate bearing capacity
+      const bearingData = calculateBearingCapacity(data, scores);
+     
+      // Generate recommendations
+      const recommendations = generateRecommendations(scores, data);
+     
+      // Display results
+      displayResults(scores, recommendations, data, bearingData);
+    });
+
+    // Initialize
+    applyConfig();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9c678ddfb49649a6',t:'MTc2OTg0NTE1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
